@@ -1,0 +1,13 @@
+name: liquid-inference-provider
+kind: model-provider
+version: 0.1.0
+description: Liquid Inference, an auction exchange for LLM inference, as a Hermes model provider
+author: Architect
+license: MIT
+homepage: https://github.com/architect-xyz/hermes-liquid-inference
+requires_hermes: ">=0.21.6"
+requires_env:
+  - name: LIQUID_API_KEY
+    description: A Liquid Inference buyer key with the spend scope
+    url: https://inference.ai.exchange
+    secret: true
