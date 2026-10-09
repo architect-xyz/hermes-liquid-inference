@@ -5,11 +5,16 @@ from providers.base import ProviderProfile
 
 
 class LiquidProfile(ProviderProfile):
-    # The override stops the reasoning field that Hermes Agent adds by default.
+    # Only a level that the user selects is sent. The exchange needs an offer
+    # that accepts a reasoning effort for a request that has one.
     def build_api_kwargs_extras(
         self, *, reasoning_config: dict | None = None, **context: Any
     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        return {}, {}
+        config = reasoning_config or {}
+        effort = config.get("effort")
+        if not effort or effort == "none" or config.get("enabled") is False:
+            return {}, {}
+        return {}, {"reasoning_effort": effort}
 
 
 register_provider(
