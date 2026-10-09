@@ -59,10 +59,15 @@ class ProfileTest(unittest.TestCase):
         self.assertEqual(self.profile.default_headers["X-Title"], "Hermes Agent")
         self.assertGreater(float(self.profile.default_headers["x-liquid-cap-usd"]), 0)
 
-    def test_sends_no_reasoning_field(self) -> None:
-        for config in (None, {"enabled": False}, {"enabled": True, "effort": "medium"}):
-            extras = self.profile.build_api_kwargs_extras(reasoning_config=config)
-            self.assertEqual(extras, ({}, {}))
+    def test_sends_only_a_selected_reasoning_effort(self) -> None:
+        extras = self.profile.build_api_kwargs_extras
+        self.assertEqual(
+            extras(reasoning_config={"enabled": True, "effort": "high"}),
+            ({}, {"reasoning_effort": "high"}),
+        )
+        for config in (None, {}, {"enabled": False}, {"enabled": False, "effort": "none"}):
+            self.assertEqual(extras(reasoning_config=config), ({}, {}))
+        self.assertEqual(extras(reasoning_config={"effort": "none"}), ({}, {}))
         self.assertIsNot(
             type(self.profile).build_api_kwargs_extras, ProviderProfile.build_api_kwargs_extras
         )
