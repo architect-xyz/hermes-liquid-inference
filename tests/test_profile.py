@@ -24,6 +24,9 @@ class ProviderProfile:
     default_aux_model: str = ""
     fallback_models: tuple[str, ...] = ()
 
+    def default_reasoning_config(self, model: str | None = None) -> dict | None:
+        return None
+
     def build_api_kwargs_extras(
         self, *, reasoning_config: dict | None = None, **context: Any
     ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -59,17 +62,31 @@ class ProfileTest(unittest.TestCase):
         self.assertEqual(self.profile.default_headers["X-Title"], "Hermes Agent")
         self.assertGreater(float(self.profile.default_headers["x-liquid-cap-usd"]), 0)
 
-    def test_sends_only_a_selected_reasoning_effort(self) -> None:
+    def test_sends_a_selected_effort_and_omits_a_disabled_effort(self) -> None:
         extras = self.profile.build_api_kwargs_extras
         self.assertEqual(
             extras(reasoning_config={"enabled": True, "effort": "high"}),
             ({}, {"reasoning_effort": "high"}),
         )
-        for config in (None, {}, {"enabled": False}, {"enabled": False, "effort": "none"}):
+        for config in (
+            None,
+            {},
+            {"enabled": False},
+            {"enabled": False, "effort": "none"},
+            {"enabled": False, "effort": "high"},
+        ):
             self.assertEqual(extras(reasoning_config=config), ({}, {}))
         self.assertEqual(extras(reasoning_config={"effort": "none"}), ({}, {}))
         self.assertIsNot(
             type(self.profile).build_api_kwargs_extras, ProviderProfile.build_api_kwargs_extras
+        )
+
+    def test_an_unset_reasoning_effort_is_medium(self) -> None:
+        default = self.profile.default_reasoning_config("architect/deepseek-v4-flash")
+        self.assertEqual(default, {"enabled": True, "effort": "medium"})
+        self.assertEqual(
+            self.profile.build_api_kwargs_extras(reasoning_config=default),
+            ({}, {"reasoning_effort": "medium"}),
         )
 
     def test_the_manifest_declares_a_model_provider(self) -> None:
