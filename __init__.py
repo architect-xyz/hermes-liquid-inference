@@ -5,8 +5,11 @@ from providers.base import ProviderProfile
 
 
 class LiquidProfile(ProviderProfile):
-    # Only a level that the user selects is sent. The exchange needs an offer
-    # that accepts a reasoning effort for a request that has one.
+    # Use the task default of the custom provider. This hook also lets Hermes
+    # omit the effort after a refusal, and leaves auxiliary requests unchanged.
+    def default_reasoning_config(self, model: str | None = None) -> dict | None:
+        return {"enabled": True, "effort": "medium"}
+
     def build_api_kwargs_extras(
         self, *, reasoning_config: dict | None = None, **context: Any
     ) -> tuple[dict[str, Any], dict[str, Any]]:
