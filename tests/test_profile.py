@@ -41,7 +41,7 @@ def load_profile() -> Any:
     base = types.ModuleType("providers.base")
     base.ProviderProfile = ProviderProfile
     with mock.patch.dict(sys.modules, {"providers": providers, "providers.base": base}):
-        spec = importlib.util.spec_from_file_location("liquid_plugin", ROOT / "__init__.py")
+        spec = importlib.util.spec_from_file_location("architect_plugin", ROOT / "__init__.py")
         spec.loader.exec_module(importlib.util.module_from_spec(spec))
     (profile,) = registered
     return profile
@@ -52,15 +52,25 @@ class ProfileTest(unittest.TestCase):
         self.profile = load_profile()
 
     def test_registers_one_api_key_provider(self) -> None:
-        self.assertEqual(self.profile.name, "liquid")
-        self.assertEqual(self.profile.aliases, ("liquid-inference",))
+        self.assertEqual(self.profile.name, "architect")
+        self.assertEqual(self.profile.display_name, "Architect Inference")
         self.assertEqual(self.profile.auth_type, "api_key")
         self.assertEqual(self.profile.base_url, "https://router.inference.ai.exchange/v1")
-        self.assertEqual(self.profile.env_vars, ("LIQUID_API_KEY", "LIQUID_BASE_URL"))
+        self.assertEqual(self.profile.default_aux_model, "architect.auto")
+
+    # Hermes reads the key variables in order, and the one variable that ends
+    # in _URL replaces the base URL.
+    def test_a_configuration_of_an_older_release_still_resolves(self) -> None:
+        self.assertIn("liquid", self.profile.aliases)
+        self.assertIn("liquid-inference", self.profile.aliases)
+        keys = [v for v in self.profile.env_vars if not v.endswith("_URL")]
+        urls = [v for v in self.profile.env_vars if v.endswith("_URL")]
+        self.assertEqual(keys, ["ARCHITECT_API_KEY", "LIQUID_API_KEY"])
+        self.assertEqual(urls, ["ARCHITECT_BASE_URL"])
 
     def test_each_request_has_the_client_label_and_a_cap(self) -> None:
         self.assertEqual(self.profile.default_headers["X-Title"], "Hermes Agent")
-        self.assertGreater(float(self.profile.default_headers["x-liquid-cap-usd"]), 0)
+        self.assertGreater(float(self.profile.default_headers["x-architect-cap-usd"]), 0)
 
     def test_sends_a_selected_effort_and_omits_a_disabled_effort(self) -> None:
         extras = self.profile.build_api_kwargs_extras
@@ -92,7 +102,7 @@ class ProfileTest(unittest.TestCase):
     def test_the_manifest_declares_a_model_provider(self) -> None:
         manifest = (ROOT / "plugin.yaml").read_text()
         self.assertIn("\nkind: model-provider\n", manifest)
-        self.assertIn("- name: LIQUID_API_KEY", manifest)
+        self.assertIn("- name: ARCHITECT_API_KEY", manifest)
 
 
 if __name__ == "__main__":
