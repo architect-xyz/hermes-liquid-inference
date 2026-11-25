@@ -4,7 +4,7 @@ from providers import register_provider
 from providers.base import ProviderProfile
 
 
-class LiquidProfile(ProviderProfile):
+class ArchitectProfile(ProviderProfile):
     # Use the task default of the custom provider. This hook also lets Hermes
     # omit the effort after a refusal, and leaves auxiliary requests unchanged.
     def default_reasoning_config(self, model: str | None = None) -> dict | None:
@@ -20,18 +20,21 @@ class LiquidProfile(ProviderProfile):
         return {}, {"reasoning_effort": effort}
 
 
+# Releases before 0.4.0 registered the provider `liquid` and read
+# LIQUID_API_KEY. The aliases keep `model.provider liquid` working, and Hermes
+# reads LIQUID_API_KEY when ARCHITECT_API_KEY is not set.
 register_provider(
-    LiquidProfile(
-        name="liquid",
-        aliases=("liquid-inference",),
-        display_name="Liquid Inference",
-        description="Liquid Inference: an auction exchange for LLM inference",
+    ArchitectProfile(
+        name="architect",
+        aliases=("architect-inference", "liquid", "liquid-inference"),
+        display_name="Architect Inference",
+        description="Architect Inference: an auction exchange for LLM inference",
         signup_url="https://inference.ai.exchange",
-        env_vars=("LIQUID_API_KEY", "LIQUID_BASE_URL"),
+        env_vars=("ARCHITECT_API_KEY", "LIQUID_API_KEY", "ARCHITECT_BASE_URL"),
         base_url="https://router.inference.ai.exchange/v1",
         auth_type="api_key",
-        default_headers={"X-Title": "Hermes Agent", "x-liquid-cap-usd": "1.00"},
-        default_aux_model="liquid.auto",
-        fallback_models=("liquid.auto",),
+        default_headers={"X-Title": "Hermes Agent", "x-architect-cap-usd": "1.00"},
+        default_aux_model="architect.auto",
+        fallback_models=("architect.auto",),
     )
 )
